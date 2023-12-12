@@ -13,9 +13,14 @@ class Ui_MainWindow(object):
         self.currentImagePos = 0
         self.image_list = []
 
+        self.MainWidget = QtWidgets.QWidget(MainWindow)
+        self.MainWidget.setObjectName("mainwidget")
+
+        MainWindow.setCentralWidget(self.MainWidget)
+
         self.ui = setupViewerUi.setupViewer()
-        self.ui.setupUi(MainWindow)
-        self.gv = QGraphicsView(MainWindow)
+        self.ui.setupUi(MainWindow, self.MainWidget)
+        self.gv = QGraphicsView(self.MainWidget)
         self.scene = QGraphicsScene()
         self.gv.setGeometry(QtCore.QRect(0, 10, 1920, 950))
 
@@ -52,7 +57,7 @@ class Ui_MainWindow(object):
         self.fitInView()
 
     def nextImage(self):
-        #try:
+        try:
             if (self.currentImagePos >= 0 and self.currentImagePos + 1 < self.numberOfFiles):
                 self.currentImagePos += 1
             elif (self.currentImagePos + 1 >= self.numberOfFiles):
@@ -61,11 +66,11 @@ class Ui_MainWindow(object):
             self.updateImage()
 
 
-        #except AttributeError:
-            #self.showPopupCritical("No input files.")
+        except AttributeError:
+            self.showPopupCritical("No input files.")
 
     def prevImage(self):
-        #try:
+        try:
             if (self.currentImagePos == 0):
                 self.currentImagePos = self.numberOfFiles - 1
             elif (self.currentImagePos <= self.numberOfFiles - 1  and self.currentImagePos > 0):
@@ -74,16 +79,18 @@ class Ui_MainWindow(object):
                 self.currentImagePos = 0
 
             self.updateImage()
-        #except AttributeError:
-            #self.showPopupCritical("No input files.")
+        except AttributeError:
+            self.showPopupCritical("No input files.")
 
     def editWindow(self, MainWindow):
-        #try:
-            self.gv.setParent =None
+        try:
+            for i in (self.MainWidget.findChildren(QtWidgets.QWidget)):
+                i.deleteLater()
+
             editorWindow = setupEditor.editor()
             editorWindow.setupUi(MainWindow, self.currentImage)
-        #except AttributeError:
-            #self.showPopupCritical("Attribute Error")
+        except AttributeError:
+            self.showPopupCritical("Attribute Error")
 
     def fitInView(self):
         rect = QtCore.QRectF(self.pixmap.rect())
