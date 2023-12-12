@@ -10,8 +10,8 @@ class setupEditor(object):
         self.font = QtGui.QFont()
         self.setAppFont()
 
-        self.label = QtWidgets.QLabel(self.centralwidget)
-        self.label.setGeometry(QtCore.QRect(0, 20, 1600, 1000))
+        #self.label = QtWidgets.QLabel(self.centralwidget)
+        #self.label.setGeometry(QtCore.QRect(0, 20, 1600, 1000))
 
         self.edit_panel = QtWidgets.QWidget(self.centralwidget)
         self.edit_panel.setGeometry(QtCore.QRect(1620, 10, 200, 1000))
@@ -21,6 +21,7 @@ class setupEditor(object):
         self.setupContrast()
         self.setupVibrance()
         self.setupSharpness()
+        self.setupCrop()
 
         self.menu = setupMenubar.Menubar()
         self.menu.setupBar(MainWindow)
@@ -106,6 +107,10 @@ class setupEditor(object):
         self.Sharpness_input_box = QtWidgets.QDoubleSpinBox(self.edit_panel)
         self.Sharpness_input_box.setGeometry(QtCore.QRect(130, 580, 60, 20))
         self.Sharpness_input_box.setObjectName("Sharpness_input_box")
+
+    def setupCrop(self):
+        self.cropButton = QtWidgets.QPushButton("Crop", self.edit_panel)
+        self.cropButton.setGeometry(QtCore.QRect(30, 630, 160, 15))
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate

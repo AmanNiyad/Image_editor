@@ -4,17 +4,12 @@ import setupMenubar
 
 
 class setupViewer():
-    def setupUi(self, MainWindow):
+    def setupUi(self, MainWindow, MainWidget):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1920, 1080)
 
-        self.centralwidget = QtWidgets.QWidget(MainWindow)
+        self.centralwidget = QtWidgets.QWidget(MainWidget)
         self.centralwidget.setObjectName("centralwidget")
-        self.label = QtWidgets.QLabel(self.centralwidget)
-        self.label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-
-        self.label.setGeometry(QtCore.QRect(0, 10, 1920, 950))
-        self.label.setObjectName("label")
 
         self.button1 = QtWidgets.QPushButton(self.centralwidget)
         self.button1.setGeometry(QtCore.QRect(310, 975, 100, 45))
@@ -28,7 +23,7 @@ class setupViewer():
         self.button3.setGeometry(QtCore.QRect(900, 975, 100, 45))
         self.button3.setObjectName("button3")
 
-        MainWindow.setCentralWidget(self.centralwidget)
+        #MainWidget.setCentralWidget(self.centralwidget)
 
         self.menu = setupMenubar.Menubar()
         self.menu.setupBar(MainWindow)
