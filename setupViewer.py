@@ -83,14 +83,14 @@ class Ui_MainWindow(object):
             self.showPopupCritical("No input files.")
 
     def editWindow(self, MainWindow):
-        try:
+        #try:
             for i in (self.MainWidget.findChildren(QtWidgets.QWidget)):
                 i.deleteLater()
 
             editorWindow = setupEditor.editor()
             editorWindow.setupUi(MainWindow, self.currentImage)
-        except AttributeError:
-            self.showPopupCritical("Attribute Error")
+        #except AttributeError:
+        #    self.showPopupCritical("Attribute Error")
 
     def fitInView(self):
         rect = QtCore.QRectF(self.pixmap.rect())
@@ -108,9 +108,9 @@ class Ui_MainWindow(object):
             self.zoom_factor = factor
 
     def updateImage(self):
+        self.scene.removeItem(self.scene_img)
         self.currentImage = self.image_list[self.currentImagePos]
         self.pixmap = QPixmap(self.currentImage)
-        self.scene.removeItem(self.scene_img)
         self.scene_img = self.scene.addPixmap(self.pixmap)
         self.gv.setScene(self.scene)
         self.gv.show()
