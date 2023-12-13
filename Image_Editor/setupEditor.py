@@ -5,15 +5,17 @@ from PyQt6.QtCore import *
 from PIL import Image, ImageEnhance
 import setupEditorUi
 
+
 class resizableRubberBand(QWidget):
-    def __init__(self, MainWindow):
-        super(resizableRubberBand, self).__init__()
+    def __init__(self, MainWindow, im):
+        super(resizableRubberBand, self).__init__(MainWindow.gv)
         self.get_zoom_factor = MainWindow.get_zoom_factor
         self.draggable, self.mousePressPos, self.mouseMovePos = True, None, None
         self.left, self.right, self.top, self.bottom = None, None, None, None
         self.borderRadius = 0
+        self.width, self.height = im.size
 
-        #self.setWindowFlags(Qt.SubWindow)
+        self.setWindowFlags(Qt.WindowType.SubWindow)
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(QSizeGrip(self), 0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
@@ -49,13 +51,15 @@ class resizableRubberBand(QWidget):
 
     def mouseMoveEvent(self, event):
         if self.draggable and event.buttons() & Qt.MouseButton.LeftButton:
-            if self.right <= int(self.ui.label.width() * self.zoom_factor) and self.bottom <= \
-                    int(self.ui.label.height() * self.zoom_factor) and self.left >= 0 and self.top >= 0:
+            if self.right <= int(self.width * self.zoom_factor) and self.bottom <= \
+                    int(self.height * self.zoom_factor) and self.left >= 0 and self.top >= 0:
                 globalPos = event.globalPosition()
-                globalPos.toPoint()
+                print(type(globalPos))
+                globalPos = globalPos.toPoint()
+                print(type(globalPos))
                 diff = globalPos - self.mouseMovePos
                 self.move(diff)  # move window
-                self.mouseMovePos = globalPosition - self.pos()
+                self.mouseMovePos = globalPos - self.pos()
 
             self.left, self.top = self.pos().x(), self.pos().y()
             self.right, self.bottom = self._band.width() + self.left, self._band.height() + self.top
@@ -68,32 +72,38 @@ class resizableRubberBand(QWidget):
         if self.left < 0:
             self.left = 0
             self.move(0, self.top)
-        if self.right > int(self.ui.label.width() * self.zoom_factor):
-            self.left = int(self.ui.label.width() * self.zoom_factor) - self._band.width()
+        if self.right > int(self.width * self.zoom_factor):
+            self.left = int(self.width * self.zoom_factor) - self._band.width()
             self.move(self.left, self.top)
-        if self.bottom > int(self.ui.label.height() * self.zoom_factor):
-            self.top = int(self.ui.label.height() * self.zoom_factor) - self._band.height()
+        if self.bottom > int(self.height * self.zoom_factor):
+            self.top = int(self.height * self.zoom_factor) - self._band.height()
             self.move(self.left, self.top)
         if self.top < 0:
             self.top = 0
             self.move(self.left, 0)
 
+
 class editor(object):
     def setupUi(self, MainWindow, im):
+        self.MainWidget = QtWidgets.QWidget(MainWindow)
+        self.MainWidget.setObjectName("mainwidget")
+        MainWindow.setCentralWidget(self.MainWidget)
+
         self.ui = setupEditorUi.setupEditor()
-        self.ui.setupUi(MainWindow)
+        self.ui.setupUi(MainWindow, self.MainWidget)
 
         self.Brightness_value = 1
         self.Contrast_value = 1
         self.Vibrance_value = 1
         self.Sharpness_value = 1
         self.zoom_factor = 1
-
-        self.image = Image.open(im)
-        self.pixmap = QPixmap(im)
         self.gv = QGraphicsView(MainWindow)
         self.scene = QGraphicsScene()
         self.gv.setGeometry(QtCore.QRect(0, 20, 1600, 1000))
+
+        self.image = Image.open(im)
+        self.pixmap = QPixmap(im)
+
         self.scene_img = self.scene.addPixmap(self.pixmap)
         self.gv.setScene(self.scene)
         self.gv.show()
@@ -102,9 +112,14 @@ class editor(object):
         self.ui.Brightness_scroll.valueChanged.connect(lambda: self.brightnessChanged())
         self.ui.Brightness_scroll.sliderReleased.connect(lambda: self.updateImg())
         self.ui.Contrast_scroll.valueChanged.connect(lambda: self.contrastChanged())
+        self.ui.Contrast_scroll.sliderReleased.connect(lambda: self.updateImg())
         self.ui.Vibrance_scroll.valueChanged.connect(lambda: self.vibranceChanged())
+        self.ui.Vibrance_scroll.sliderReleased.connect(lambda: self.updateImg())
         self.ui.Sharpness_scroll.valueChanged.connect(lambda: self.sharpnessChanged())
+        self.ui.Sharpness_scroll.sliderReleased.connect(lambda: self.updateImg())
         self.ui.cropButton.clicked.connect(lambda: self.cropping(MainWindow))
+
+        print(MainWindow.findChildren(QtWidgets.QGraphicsView))
 
     def get_zoom_factor(self):
         return(self.zoom_factor)
@@ -146,9 +161,8 @@ class editor(object):
         self.ui.label.setStyleSheet("background-color:green")
         """
 
-        self.rb = resizableRubberBand(self, MainWindow)
-        self.rb.setGeometry(0, 0, self.ui.label.width() * self.zoom_factor,
-                            self.ui.label.height() * self.zoom_factor)
+        self.rb = resizableRubberBand(self, self.image)
+        self.rb.setGeometry(0, 20, 1600, 1000)
 
 
     def pil2pixmap(self, im):
@@ -185,12 +199,6 @@ class editor(object):
             self.gv.scale(factor, factor)
             self._zoom = 0
             self.zoom_factor = factor
-
-    #def updateImage(self, im):
-    #    pixmap = QPixmap(im)
-    #    self.gv.removeItem(self.scene_img)
-    #    self.scene_img= self.scene.addPixmap(pixmap)
-    #    self.fitInView()
 
     def updateImg(self):
         brightness_enhancer = ImageEnhance.Brightness(self.image)

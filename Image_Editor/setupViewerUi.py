@@ -23,9 +23,8 @@ class setupViewer():
         self.button3.setGeometry(QtCore.QRect(900, 975, 100, 45))
         self.button3.setObjectName("button3")
 
-        #MainWidget.setCentralWidget(self.centralwidget)
-
         self.menu = setupMenubar.Menubar()
+
         self.menu.setupBar(MainWindow)
 
         self.statusbar = QtWidgets.QStatusBar(MainWindow)

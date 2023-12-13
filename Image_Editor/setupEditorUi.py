@@ -3,17 +3,14 @@ import setupMenubar
 
 
 class setupEditor(object):
-    def setupUi(self, MainWindow):
-        self.centralwidget = QtWidgets.QWidget(MainWindow)
-        self.centralwidget.setObjectName("centralwidget")
+    def setupUi(self, MainWindow,MainWidget):
+        #self.centralwidget = QtWidgets.QWidget(MainWidget)
+        #self.centralwidget.setObjectName("centralwidget")
 
         self.font = QtGui.QFont()
         self.setAppFont()
 
-        #self.label = QtWidgets.QLabel(self.centralwidget)
-        #self.label.setGeometry(QtCore.QRect(0, 20, 1600, 1000))
-
-        self.edit_panel = QtWidgets.QWidget(self.centralwidget)
+        self.edit_panel = QtWidgets.QWidget(MainWidget)
         self.edit_panel.setGeometry(QtCore.QRect(1620, 10, 200, 1000))
         self.edit_panel.setObjectName("widget_2")
 
@@ -26,7 +23,6 @@ class setupEditor(object):
         self.menu = setupMenubar.Menubar()
         self.menu.setupBar(MainWindow)
 
-        MainWindow.setCentralWidget(self.centralwidget)
         self.retranslateUi(MainWindow)
 
     def setAppFont(self):
