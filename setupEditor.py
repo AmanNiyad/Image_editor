@@ -38,7 +38,6 @@ class resizableRubberBand(QWidget):
         self._band.resize(self.size())
 
     def paintEvent(self, event):
-        # Get current window size
         window_size = self.size()
         qp = QPainter(self)
         qp.drawRoundedRect(0, 0, window_size.width(), window_size.height(), self.borderRadius, self.borderRadius)
@@ -54,9 +53,7 @@ class resizableRubberBand(QWidget):
             if self.right <= int(self.width * self.zoom_factor) and self.bottom <= \
                     int(self.height * self.zoom_factor) and self.left >= 0 and self.top >= 0:
                 globalPos = event.globalPosition()
-                print(type(globalPos))
                 globalPos = globalPos.toPoint()
-                print(type(globalPos))
                 diff = globalPos - self.mouseMovePos
                 self.move(diff)  # move window
                 self.mouseMovePos = globalPos - self.pos()
@@ -102,6 +99,7 @@ class editor(object):
         self.gv.setGeometry(QtCore.QRect(0, 20, 1600, 1000))
 
         self.image = Image.open(im)
+        self.originalImage = self.image
         self.pixmap = QPixmap(im)
 
         self.scene_img = self.scene.addPixmap(self.pixmap)
@@ -118,8 +116,6 @@ class editor(object):
         self.ui.Sharpness_scroll.valueChanged.connect(lambda: self.sharpnessChanged())
         self.ui.Sharpness_scroll.sliderReleased.connect(lambda: self.updateImg())
         self.ui.cropButton.clicked.connect(lambda: self.cropping(MainWindow))
-
-        print(MainWindow.findChildren(QtWidgets.QGraphicsView))
 
     def get_zoom_factor(self):
         return(self.zoom_factor)
@@ -153,17 +149,39 @@ class editor(object):
         self.ui.Sharpness_input_box.setValue(self.ui.Sharpness_scroll.value()/1000)
 
     def cropping(self, MainWindow):
-        """
-        self.Label = QtWidgets.QLabel("label", self.ui.centralwidget)
-        self.Label.setGeometry(QtCore.QRect(0, 20, 1700, 1000))
-        self.Label = self.ui.label
-        self.ui.label.setFrameStyle(QFrame.Shape.Panel | QFrame.Shadow.Sunken)
-        self.ui.label.setStyleSheet("background-color:green")
-        """
-
         self.rb = resizableRubberBand(self, self.image)
         self.rb.setGeometry(0, 20, 1600, 1000)
 
+        self.cropWidget = QWidget(self.ui.edit_panel)
+        self.cropWidget.setGeometry(QtCore.QRect(30, 645, 160, 40))
+
+        confirmButton = QPushButton("Confirm", self.cropWidget)
+        confirmButton.setGeometry(QtCore.QRect(37, 5, 93, 15))
+        cancelButton = QPushButton("Cancel", self.cropWidget)
+        cancelButton.setGeometry(QtCore.QRect(37, 20, 93, 15))
+
+        confirmButton.clicked.connect(lambda: self.cropConfirm())
+        cancelButton.clicked.connect(lambda: self.cropCancel())
+
+        self.cropWidget.show()
+        self.ui.cropButton.hide()
+        confirmButton.show()
+        cancelButton.show()
+
+    def cropConfirm(self):
+        self.rb.update_dim()
+
+        image_copy = self.image.crop((self.rb.left/ self.zoom_factor, self.rb.top / self.zoom_factor,
+                                      self.rb.right / self.zoom_factor,self.rb.bottom / self.zoom_factor))
+        self.image = image_copy
+        self.pil2pixmap(image_copy)
+        self.rb.close()
+        for i in (self.cropWidget.findChildren(QtWidgets.QWidget)):
+            i.deleteLater()
+
+        self.updateImg()
+
+        self.ui.cropButton.show()
 
     def pil2pixmap(self, im):
         if im.mode == "RGB":
@@ -181,8 +199,6 @@ class editor(object):
         pixmap = QtGui.QPixmap.fromImage(qim)
         self.scene.removeItem(self.scene_img)
         self.scene_img= self.scene.addPixmap(pixmap)
-        self.gv.setScene(self.scene)
-        self.gv.show()
         self.fitInView()
 
     def fitInView(self):
