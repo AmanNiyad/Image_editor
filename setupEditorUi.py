@@ -1,17 +1,16 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
 import setupMenubar
-
+import pyqtgraph as pg
+from PIL import Image
 
 class setupEditor(object):
-    def setupUi(self, MainWindow,MainWidget):
-        #self.centralwidget = QtWidgets.QWidget(MainWidget)
-        #self.centralwidget.setObjectName("centralwidget")
+    def setupUi(self, MainWindow, MainWidget, img):
 
         self.font = QtGui.QFont()
         self.setAppFont()
 
         self.edit_panel = QtWidgets.QWidget(MainWidget)
-        self.edit_panel.setGeometry(QtCore.QRect(1620, 10, 200, 1000))
+        self.edit_panel.setGeometry(QtCore.QRect(1600, 0, 320, 1000))
         self.edit_panel.setObjectName("widget_2")
 
         self.setupBrightness()
@@ -19,11 +18,64 @@ class setupEditor(object):
         self.setupVibrance()
         self.setupSharpness()
         self.setupCrop()
+        self.setupHistogram(img)
 
         self.menu = setupMenubar.Menubar()
         self.menu.setupBar(MainWindow)
 
         self.retranslateUi(MainWindow)
+
+    def setupHistogram(self, img):
+        image = Image.open(img)
+        self.hist = image.histogram()
+
+        self.plot = pg.PlotWidget(parent = self.edit_panel)
+
+        self.plt1 = pg.PlotCurveItem(self.hist[0:256])
+        self.plt2 = pg.PlotCurveItem(self.hist[256:512])
+        self.plt3 = pg.PlotCurveItem(self.hist[512:768])
+
+        self.plot.setLimits(xMin=0,yMin=0,xMax=256,yMax=max(self.hist))
+        self.plot.setAspectLocked(None)
+        self.plot.hideAxis('bottom')
+        self.plot.hideAxis('left')
+
+        self.plotCurves()
+
+        self.plot.addItem(self.plt1)
+        self.plot.addItem(self.plt2)
+        self.plot.addItem(self.plt3)
+        self.plot.setGeometry(2,2,316,200)
+
+    def updateHistogram(self, img):
+        self.plot.removeItem(self.plt1)
+        self.plot.removeItem(self.plt2)
+        self.plot.removeItem(self.plt3)
+        self.hist = img.histogram()
+
+        self.plt1 = pg.PlotCurveItem(self.hist[0:256], antialias=True)
+        self.plt2 = pg.PlotCurveItem(self.hist[256:512], antialias=True)
+        self.plt3 = pg.PlotCurveItem(self.hist[512:768], antialias=True)
+
+        self.plotCurves()
+
+        self.plot.addItem(self.plt1)
+        self.plot.addItem(self.plt2)
+        self.plot.addItem(self.plt3)
+
+    def plotCurves(self):
+        self.plt1.setBrush("Red")
+        self.plt1.setFillLevel(0)
+        self.plt1.setPen(None)
+        self.plt1.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Plus)
+        self.plt2.setBrush("Green")
+        self.plt2.setFillLevel(0)
+        self.plt2.setPen(None)
+        self.plt2.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Plus)
+        self.plt3.setBrush("Blue")
+        self.plt3.setFillLevel(0)
+        self.plt3.setPen(None)
+        self.plt3.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Plus)
 
     def setAppFont(self):
         self.font.setFamily("Iosevka Nerd Font Mono")
