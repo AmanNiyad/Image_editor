@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 from PIL import Image, ImageEnhance
+from numpy import asarray
 import setupEditorUi
 
 
@@ -87,7 +88,7 @@ class editor(object):
         MainWindow.setCentralWidget(self.MainWidget)
 
         self.ui = setupEditorUi.setupEditor()
-        self.ui.setupUi(MainWindow, self.MainWidget)
+        self.ui.setupUi(MainWindow, self.MainWidget, im)
 
         self.Brightness_value = 1
         self.Contrast_value = 1
@@ -150,7 +151,7 @@ class editor(object):
 
     def cropping(self, MainWindow):
         self.rb = resizableRubberBand(self, self.image)
-        self.rb.setGeometry(0, 20, 1600, 1000)
+        self.rb.setGeometry(0, 0, 1600, 1010)
 
         self.cropWidget = QWidget(self.ui.edit_panel)
         self.cropWidget.setGeometry(QtCore.QRect(30, 645, 160, 40))
@@ -174,6 +175,7 @@ class editor(object):
         image_copy = self.image.crop((self.rb.left/ self.zoom_factor, self.rb.top / self.zoom_factor,
                                       self.rb.right / self.zoom_factor,self.rb.bottom / self.zoom_factor))
         self.image = image_copy
+        image_copy = image_copy.reduce(4)
         self.pil2pixmap(image_copy)
         self.rb.close()
         for i in (self.cropWidget.findChildren(QtWidgets.QWidget)):
@@ -226,3 +228,4 @@ class editor(object):
         sharpness_enhancer = ImageEnhance.Sharpness(image_copy)
         image_copy = sharpness_enhancer.enhance(self.Sharpness_value)
         self.pil2pixmap(image_copy)
+        self.ui.updateHistogram(image_copy)
