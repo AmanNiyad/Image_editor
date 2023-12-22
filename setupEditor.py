@@ -3,8 +3,7 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 from PIL import Image, ImageEnhance
-from numpy import asarray
-import setupEditorUi
+import setupEditorUI_new
 
 
 class resizableRubberBand(QWidget):
@@ -87,36 +86,38 @@ class editor(object):
         self.MainWidget.setObjectName("mainwidget")
         MainWindow.setCentralWidget(self.MainWidget)
 
-        self.ui = setupEditorUi.setupEditor()
-        self.ui.setupUi(MainWindow, self.MainWidget, im)
+        self.ui = setupEditorUI_new.setupEditor()
+        self.ui.setupUi(MainWindow, im)
 
         self.Brightness_value = 1
         self.Contrast_value = 1
         self.Vibrance_value = 1
         self.Sharpness_value = 1
         self.zoom_factor = 1
-        self.gv = QGraphicsView(MainWindow)
         self.scene = QGraphicsScene()
-        self.gv.setGeometry(QtCore.QRect(0, 20, 1600, 1000))
 
         self.image = Image.open(im)
         self.originalImage = self.image
         self.pixmap = QPixmap(im)
 
         self.scene_img = self.scene.addPixmap(self.pixmap)
-        self.gv.setScene(self.scene)
-        self.gv.show()
-        self.fitInView()
+        self.ui.gv.setScene(self.scene)
+        self.ui.gv.ensureVisible(self.scene_img)
+        QtCore.QTimer.singleShot(0, self.handle_timeout)
 
-        self.ui.Brightness_scroll.valueChanged.connect(lambda: self.brightnessChanged())
-        self.ui.Brightness_scroll.sliderReleased.connect(lambda: self.updateImg())
-        self.ui.Contrast_scroll.valueChanged.connect(lambda: self.contrastChanged())
-        self.ui.Contrast_scroll.sliderReleased.connect(lambda: self.updateImg())
-        self.ui.Vibrance_scroll.valueChanged.connect(lambda: self.vibranceChanged())
-        self.ui.Vibrance_scroll.sliderReleased.connect(lambda: self.updateImg())
-        self.ui.Sharpness_scroll.valueChanged.connect(lambda: self.sharpnessChanged())
-        self.ui.Sharpness_scroll.sliderReleased.connect(lambda: self.updateImg())
-        self.ui.cropButton.clicked.connect(lambda: self.cropping(MainWindow))
+        self.ui.brightnessSlider.valueChanged.connect(lambda: self.brightnessChanged())
+        self.ui.brightnessSlider.sliderReleased.connect(lambda: self.updateImg())
+        self.ui.contrastSlider.valueChanged.connect(lambda: self.contrastChanged())
+        self.ui.contrastSlider.sliderReleased.connect(lambda: self.updateImg())
+        self.ui.vibranceSlider.valueChanged.connect(lambda: self.vibranceChanged())
+        self.ui.vibranceSlider.sliderReleased.connect(lambda: self.updateImg())
+        self.ui.sharpnessSlider.valueChanged.connect(lambda: self.sharpnessChanged())
+        self.ui.sharpnessSlider.sliderReleased.connect(lambda: self.updateImg())
+        #self.ui.cropbutton.clicked.connect(lambda: self.cropping(MainWindow))
+
+    def handle_timeout(self):
+        self.ui.gv.fitInView(self.scene_img, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
+        self.ui.gv.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
     def get_zoom_factor(self):
         return(self.zoom_factor)
@@ -201,22 +202,8 @@ class editor(object):
         pixmap = QtGui.QPixmap.fromImage(qim)
         self.scene.removeItem(self.scene_img)
         self.scene_img= self.scene.addPixmap(pixmap)
-        self.fitInView()
-
-    def fitInView(self):
-        rect = QtCore.QRectF(self.pixmap.rect())
-        if not rect.isNull():
-            self.gv.setSceneRect(rect)
-
-            unity = self.gv.transform().mapRect(QtCore.QRectF(0, 0, 1, 1))
-            self.gv.scale(1 / unity.width(), 1 / unity.height())
-            view_rect = self.gv.viewport().rect()
-            scene_rect = self.gv.transform().mapRect(rect)
-            factor = min(view_rect.width() / scene_rect.width(),
-                         view_rect.height() / scene_rect.height())
-            self.gv.scale(factor, factor)
-            self._zoom = 0
-            self.zoom_factor = factor
+        #self.fitInView()
+        self.ui.gv.fitInView(self.scene_img, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
 
     def updateImg(self):
         brightness_enhancer = ImageEnhance.Brightness(self.image)
