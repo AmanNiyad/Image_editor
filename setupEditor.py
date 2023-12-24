@@ -3,12 +3,13 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 from PIL import Image, ImageEnhance
+import pyqtgraph as pg
 import setupEditorUI_new
 
 
 class resizableRubberBand(QWidget):
     def __init__(self, MainWindow, im):
-        super(resizableRubberBand, self).__init__(MainWindow.gv)
+        super(resizableRubberBand, self).__init__(MainWindow.ui.gv)
         self.get_zoom_factor = MainWindow.get_zoom_factor
         self.draggable, self.mousePressPos, self.mouseMovePos = True, None, None
         self.left, self.right, self.top, self.bottom = None, None, None, None
@@ -82,10 +83,6 @@ class resizableRubberBand(QWidget):
 
 class editor(object):
     def setupUi(self, MainWindow, im):
-        self.MainWidget = QtWidgets.QWidget(MainWindow)
-        self.MainWidget.setObjectName("mainwidget")
-        MainWindow.setCentralWidget(self.MainWidget)
-
         self.ui = setupEditorUI_new.setupEditor()
         self.ui.setupUi(MainWindow, im)
 
@@ -100,10 +97,29 @@ class editor(object):
         self.originalImage = self.image
         self.pixmap = QPixmap(im)
 
+        # Histogram
+        hist = self.image.histogram()
+
+        self.plt1 = pg.PlotCurveItem(hist[0:256], antialias = True)
+        self.plt2 = pg.PlotCurveItem(hist[256:512], antialias = True)
+        self.plt3 = pg.PlotCurveItem(hist[512:768], antialias = True)
+
+        self.ui.plot.setLimits(xMin = 0, yMin = 0,
+                            xMax = 256, yMax = max(hist))
+        self.plotCurves()
+
+        self.ui.plot.addItem(self.plt1)
+        self.ui.plot.addItem(self.plt2)
+        self.ui.plot.addItem(self.plt3)
+
+        # Display
         self.scene_img = self.scene.addPixmap(self.pixmap)
         self.ui.gv.setScene(self.scene)
         self.ui.gv.ensureVisible(self.scene_img)
         QtCore.QTimer.singleShot(0, self.handle_timeout)
+
+        self.side_Menu_Pos = 1
+        self.ui.toggleMenuButton.clicked.connect(lambda: self.side_Menu_Def_0())
 
         self.ui.brightnessSlider.valueChanged.connect(lambda: self.brightnessChanged())
         self.ui.brightnessSlider.sliderReleased.connect(lambda: self.updateImg())
@@ -113,78 +129,116 @@ class editor(object):
         self.ui.vibranceSlider.sliderReleased.connect(lambda: self.updateImg())
         self.ui.sharpnessSlider.valueChanged.connect(lambda: self.sharpnessChanged())
         self.ui.sharpnessSlider.sliderReleased.connect(lambda: self.updateImg())
-        #self.ui.cropbutton.clicked.connect(lambda: self.cropping(MainWindow))
+        self.ui.cropButton.clicked.connect(lambda: self.cropping())
+
+    def side_Menu_Def_0(self):
+        if self.side_Menu_Pos == 0:
+            self.animation1 = QtCore.QPropertyAnimation(self.ui.slidingMenuFrame, b"maximumWidth")
+            self.animation1.setDuration(500)
+            self.animation1.setStartValue(40)
+            self.animation1.setEndValue(280)
+            self.animation1.setEasingCurve(QtCore.QEasingCurve.Type.InOutQuad)
+            self.animation1.start()
+
+            self.animation2 = QtCore.QPropertyAnimation(self.ui.slidingMenuFrame, b"minimumWidth")
+            self.animation2.setDuration(500)
+            self.animation2.setStartValue(40)
+            self.animation2.setEndValue(280)
+            self.animation2.setEasingCurve(QtCore.QEasingCurve.Type.InOutQuad)
+            self.animation2.start()
+            self.side_Menu_Pos = 1
+            self.ui.showSlidingMenuButtons()
+
+        else:
+            self.animation1 = QtCore.QPropertyAnimation(self.ui.slidingMenuFrame, b"maximumWidth")
+            self.animation1.setDuration(500)
+            self.animation1.setStartValue(280)
+            self.animation1.setEndValue(40)
+            self.animation1.setEasingCurve(QtCore.QEasingCurve.Type.InOutQuad)
+            self.animation1.start()
+
+            self.animation2 = QtCore.QPropertyAnimation(self.ui.slidingMenuFrame, b"minimumWidth")
+            self.animation2.setDuration(500)
+            self.animation2.setStartValue(280)
+            self.animation2.setEndValue(40)
+            self.animation2.setEasingCurve(QtCore.QEasingCurve.Type.InOutQuad)
+            self.animation2.start()
+            self.side_Menu_Pos = 0
+            self.ui.hideSlidingMenuButtons()
 
     def handle_timeout(self):
         self.ui.gv.fitInView(self.scene_img, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
         self.ui.gv.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
     def get_zoom_factor(self):
-        return(self.zoom_factor)
+        return (self.zoom_factor)
 
     def brightnessChanged(self):
-        self.Brightness_value = self.ui.Brightness_scroll.value()/1000
+        self.Brightness_value = self.ui.brightnessSlider.value()/1000
         brightness_enhancer = ImageEnhance.Brightness(self.image)
         image_copy = brightness_enhancer.enhance(self.Brightness_value)
         self.pil2pixmap(image_copy)
-        self.ui.Brightness_input_box.setValue(self.ui.Brightness_scroll.value()/1000)
+        self.ui.brightnessInputBox.setValue(self.ui.brightnessSlider.value()/1000)
 
     def contrastChanged(self):
-        self.Contrast_value = self.ui.Contrast_scroll.value()/1000
+        self.Contrast_value = self.ui.contrastSlider.value()/1000
         contrast_enhancer = ImageEnhance.Contrast(self.image)
         image_copy = contrast_enhancer.enhance(self.Contrast_value)
         self.pil2pixmap(image_copy)
-        self.ui.Contrast_input_box.setValue(self.ui.Contrast_scroll.value()/1000)
+        self.ui.contrastInputBox.setValue(self.ui.contrastSlider.value()/1000)
 
     def vibranceChanged(self):
-        self.Vibrance_value = self.ui.Vibrance_scroll.value()/1000
+        self.Vibrance_value = self.ui.vibranceSlider.value()/1000
         vibrance_enhancer = ImageEnhance.Color(self.image)
         image_copy = vibrance_enhancer.enhance(self.Vibrance_value)
         self.pil2pixmap(image_copy)
-        self.ui.Vibrance_input_box.setValue(self.ui.Vibrance_scroll.value()/1000)
+        self.ui.vibranceInputBox.setValue(self.ui.vibranceSlider.value()/1000)
 
     def sharpnessChanged(self):
-        self.Sharpness_value = self.ui.Sharpness_scroll.value()/1000
+        self.Sharpness_value = self.ui.sharpnessSlider.value()/1000
         sharpness_enhancer = ImageEnhance.Sharpness(self.image)
         image_copy = sharpness_enhancer.enhance(self.Sharpness_value)
         self.pil2pixmap(image_copy)
-        self.ui.Sharpness_input_box.setValue(self.ui.Sharpness_scroll.value()/1000)
+        self.ui.sharpnessInputBox.setValue(self.ui.sharpnessSlider.value()/1000)
 
-    def cropping(self, MainWindow):
+    def cropping(self):
         self.rb = resizableRubberBand(self, self.image)
-        self.rb.setGeometry(0, 0, 1600, 1010)
+        self.rb.setGeometry(self.ui.gv.geometry())
+        self.ui.cropConfirmButton.show()
+        self.ui.cropCancelButton.show()
+        self.ui.cropButton.setEnabled(False)
 
-        self.cropWidget = QWidget(self.ui.edit_panel)
-        self.cropWidget.setGeometry(QtCore.QRect(30, 645, 160, 40))
-
-        confirmButton = QPushButton("Confirm", self.cropWidget)
-        confirmButton.setGeometry(QtCore.QRect(37, 5, 93, 15))
-        cancelButton = QPushButton("Cancel", self.cropWidget)
-        cancelButton.setGeometry(QtCore.QRect(37, 20, 93, 15))
-
-        confirmButton.clicked.connect(lambda: self.cropConfirm())
-        cancelButton.clicked.connect(lambda: self.cropCancel())
-
-        self.cropWidget.show()
-        self.ui.cropButton.hide()
-        confirmButton.show()
-        cancelButton.show()
+        self.ui.cropConfirmButton.clicked.connect(lambda: self.cropConfirm())
+        self.ui.cropCancelButton.clicked.connect(lambda: self.cropCancel())
 
     def cropConfirm(self):
         self.rb.update_dim()
+        print(self.rb.left)
+        print(self.rb.top)
+        print(self.rb.right)
+        print(self.rb.bottom)
+        print(self.image.width, "X" ,self.image.height)
+        print(self.scene_img.offset().x())
+        print(self.scene_img.offset().y())
+        print(self.zoom_factor)
 
-        image_copy = self.image.crop((self.rb.left/ self.zoom_factor, self.rb.top / self.zoom_factor,
-                                      self.rb.right / self.zoom_factor,self.rb.bottom / self.zoom_factor))
-        self.image = image_copy
-        image_copy = image_copy.reduce(4)
-        self.pil2pixmap(image_copy)
+        #image_copy = self.image.crop((self.rb.left / self.zoom_factor, self.rb.top / self.zoom_factor,
+        #         self.rb.right / self.zoom_factor, self.rb.bottom / self.zoom_factor))
+
+        cropPixmap = self.pixmap.copy(self.rb.geometry())
+        self.scene.removeItem(self.scene_img)
+        self.scene_img = self.scene.addPixmap(cropPixmap)
+        self.ui.gv.ensureVisible(self.scene_img)
+        self.ui.gv.fitInView(self.scene_img, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
+
+        #self.image = image_copy
+        #image_copy = image_copy.reduce(4)
+        #self.pil2pixmap(image_copy)
         self.rb.close()
-        for i in (self.cropWidget.findChildren(QtWidgets.QWidget)):
-            i.deleteLater()
+        self.ui.cropConfirmButton.hide()
+        self.ui.cropCancelButton.hide()
 
-        self.updateImg()
-
-        self.ui.cropButton.show()
+        self.ui.cropButton.setEnabled(True)
 
     def pil2pixmap(self, im):
         if im.mode == "RGB":
@@ -199,10 +253,10 @@ class editor(object):
         im2 = im.convert("RGBA")
         data = im2.tobytes("raw", "RGBA")
         qim = QtGui.QImage(data, im.size[0], im.size[1], QtGui.QImage.Format.Format_ARGB32)
-        pixmap = QtGui.QPixmap.fromImage(qim)
+        self.pixmap = QtGui.QPixmap.fromImage(qim)
         self.scene.removeItem(self.scene_img)
-        self.scene_img= self.scene.addPixmap(pixmap)
-        #self.fitInView()
+        self.scene_img = self.scene.addPixmap(self.pixmap)
+        self.ui.gv.ensureVisible(self.scene_img)
         self.ui.gv.fitInView(self.scene_img, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
 
     def updateImg(self):
@@ -215,4 +269,37 @@ class editor(object):
         sharpness_enhancer = ImageEnhance.Sharpness(image_copy)
         image_copy = sharpness_enhancer.enhance(self.Sharpness_value)
         self.pil2pixmap(image_copy)
-        self.ui.updateHistogram(image_copy)
+        self.updateHistogram(image_copy)
+
+    def updateHistogram(self, im):
+        hist = im.histogram()
+        self.ui.plot.removeItem(self.plt1)
+        self.ui.plot.removeItem(self.plt2)
+        self.ui.plot.removeItem(self.plt3)
+
+        self.plt1 = pg.PlotCurveItem(hist[0:256], antialias = True)
+        self.plt2 = pg.PlotCurveItem(hist[256:512], antialias = True)
+        self.plt3 = pg.PlotCurveItem(hist[512:768], antialias = True)
+
+        self.ui.plot.setLimits(xMin = 0, yMin = 0,
+                            xMax = 256, yMax = max(hist))
+
+        self.plotCurves()
+
+        self.ui.plot.addItem(self.plt1)
+        self.ui.plot.addItem(self.plt2)
+        self.ui.plot.addItem(self.plt3)
+
+    def plotCurves(self):
+        self.plt1.setBrush("#9d3530")
+        self.plt1.setFillLevel(0)
+        self.plt1.setPen(None)
+        self.plt1.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Plus)
+        self.plt2.setBrush("#349c33")
+        self.plt2.setFillLevel(0)
+        self.plt2.setPen(None)
+        self.plt2.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Plus)
+        self.plt3.setBrush("#2d2d9b")
+        self.plt3.setFillLevel(0)
+        self.plt3.setPen(None)
+        self.plt3.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Plus)
