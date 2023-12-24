@@ -16,9 +16,6 @@ class setupEditor(object):
         self.createDisplayPanel()
         self.createEditingPanel()
 
-        self.side_Menu_Pos = 1
-        self.toggleMenuButton.clicked.connect(lambda: self.side_Menu_Def_0())
-
         self.imageProcessingButton.clicked.connect(lambda: self.showProcessingPage())
         self.imageOperationsButton.clicked.connect(lambda: self.showOperationsPage())
         self.imageEffectsButton.clicked.connect(lambda: self.showEffectsPage())
@@ -26,41 +23,6 @@ class setupEditor(object):
         self.retranslateUi(MainWindow)
         self.stackedWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
-
-    def side_Menu_Def_0(self):
-        if self.side_Menu_Pos == 0:
-            self.animation1 = QtCore.QPropertyAnimation(self.slidingMenuFrame, b"maximumWidth")
-            self.animation1.setDuration(500)
-            self.animation1.setStartValue(40)
-            self.animation1.setEndValue(280)
-            self.animation1.setEasingCurve(QtCore.QEasingCurve.Type.InOutQuad)
-            self.animation1.start()
-
-            self.animation2 = QtCore.QPropertyAnimation(self.slidingMenuFrame, b"minimumWidth")
-            self.animation2.setDuration(500)
-            self.animation2.setStartValue(40)
-            self.animation2.setEndValue(280)
-            self.animation2.setEasingCurve(QtCore.QEasingCurve.Type.InOutQuad)
-            self.animation2.start()
-            self.side_Menu_Pos = 1
-            self.showSlidingMenuButtons()
-
-        else:
-            self.animation1 = QtCore.QPropertyAnimation(self.slidingMenuFrame, b"maximumWidth")
-            self.animation1.setDuration(500)
-            self.animation1.setStartValue(280)
-            self.animation1.setEndValue(40)
-            self.animation1.setEasingCurve(QtCore.QEasingCurve.Type.InOutQuad)
-            self.animation1.start()
-
-            self.animation2 = QtCore.QPropertyAnimation(self.slidingMenuFrame, b"minimumWidth")
-            self.animation2.setDuration(500)
-            self.animation2.setStartValue(280)
-            self.animation2.setEndValue(40)
-            self.animation2.setEasingCurve(QtCore.QEasingCurve.Type.InOutQuad)
-            self.animation2.start()
-            self.side_Menu_Pos = 0
-            self.hideSlidingMenuButtons()
 
     def hideSlidingMenuButtons(self):
         self.saveButton.hide()
@@ -182,11 +144,8 @@ class setupEditor(object):
         self.horizontalLayout_2.setStretch(2, 1)
 
     def createGraphWidget(self):
-        self.graphFrame = QtWidgets.QFrame(parent=self.editingPanel)
-        self.graphFrame.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
-        self.graphFrame.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
-        self.graphFrame.setObjectName("graphFrame")
-        self.verticalLayout.addWidget(self.graphFrame)
+        self.plot = pg.PlotWidget()
+        self.verticalLayout.addWidget(self.plot)
 
     def createEditingPanelMenu(self):
         font = QtGui.QFont()
