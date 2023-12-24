@@ -16,9 +16,6 @@ class setupEditor(object):
         self.createDisplayPanel()
         self.createEditingPanel()
 
-        self.side_Menu_Pos = 1
-        self.toggleMenuButton.clicked.connect(lambda: self.side_Menu_Def_0())
-
         self.imageProcessingButton.clicked.connect(lambda: self.showProcessingPage())
         self.imageOperationsButton.clicked.connect(lambda: self.showOperationsPage())
         self.imageEffectsButton.clicked.connect(lambda: self.showEffectsPage())
@@ -26,41 +23,6 @@ class setupEditor(object):
         self.retranslateUi(MainWindow)
         self.stackedWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
-
-    def side_Menu_Def_0(self):
-        if self.side_Menu_Pos == 0:
-            self.animation1 = QtCore.QPropertyAnimation(self.slidingMenuFrame, b"maximumWidth")
-            self.animation1.setDuration(500)
-            self.animation1.setStartValue(40)
-            self.animation1.setEndValue(280)
-            self.animation1.setEasingCurve(QtCore.QEasingCurve.Type.InOutQuad)
-            self.animation1.start()
-
-            self.animation2 = QtCore.QPropertyAnimation(self.slidingMenuFrame, b"minimumWidth")
-            self.animation2.setDuration(500)
-            self.animation2.setStartValue(40)
-            self.animation2.setEndValue(280)
-            self.animation2.setEasingCurve(QtCore.QEasingCurve.Type.InOutQuad)
-            self.animation2.start()
-            self.side_Menu_Pos = 1
-            self.showSlidingMenuButtons()
-
-        else:
-            self.animation1 = QtCore.QPropertyAnimation(self.slidingMenuFrame, b"maximumWidth")
-            self.animation1.setDuration(500)
-            self.animation1.setStartValue(280)
-            self.animation1.setEndValue(40)
-            self.animation1.setEasingCurve(QtCore.QEasingCurve.Type.InOutQuad)
-            self.animation1.start()
-
-            self.animation2 = QtCore.QPropertyAnimation(self.slidingMenuFrame, b"minimumWidth")
-            self.animation2.setDuration(500)
-            self.animation2.setStartValue(280)
-            self.animation2.setEndValue(40)
-            self.animation2.setEasingCurve(QtCore.QEasingCurve.Type.InOutQuad)
-            self.animation2.start()
-            self.side_Menu_Pos = 0
-            self.hideSlidingMenuButtons()
 
     def hideSlidingMenuButtons(self):
         self.saveButton.hide()
@@ -154,6 +116,7 @@ class setupEditor(object):
         self.verticalLayout_2.addWidget(self.infoLabel)
 
         self.verticalLayout_2.setStretch(0, 2)
+        self.verticalLayout_2.setContentsMargins(2, 2, 2, 2)
 
         self.horizontalLayout_2.addWidget(self.displayFrame)
 
@@ -166,6 +129,8 @@ class setupEditor(object):
         self.verticalLayout = QtWidgets.QVBoxLayout(self.editingPanel)
         self.verticalLayout.setObjectName("verticalLayout")
 
+        self.verticalLayout.setContentsMargins(2, 2, 2, 2)
+
         self.createGraphWidget()
         self.createEditingPanelMenu()
         self.createStackedWidget()
@@ -174,19 +139,22 @@ class setupEditor(object):
 
         self.verticalLayout.addItem(spacerItem4)
         self.verticalLayout.setStretch(0, 2)
-        self.verticalLayout.setStretch(2, 6)
-        self.verticalLayout.setStretch(3, 3)
+        self.verticalLayout.setStretch(2, 7)
+        self.verticalLayout.setStretch(3, 5)
 
         self.horizontalLayout_2.addWidget(self.editingPanel)
         self.horizontalLayout_2.setStretch(1, 8)
         self.horizontalLayout_2.setStretch(2, 1)
+        self.horizontalLayout_2.setContentsMargins(2, 2, 2, 2)
 
     def createGraphWidget(self):
-        self.graphFrame = QtWidgets.QFrame(parent=self.editingPanel)
-        self.graphFrame.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
-        self.graphFrame.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
-        self.graphFrame.setObjectName("graphFrame")
-        self.verticalLayout.addWidget(self.graphFrame)
+        self.plot = pg.PlotWidget()
+        self.plot.setBackground("#262626")
+        self.verticalLayout.addWidget(self.plot)
+        self.plot.setAspectLocked(None)
+        self.plot.hideAxis('bottom')
+        self.plot.hideAxis('left')
+
 
     def createEditingPanelMenu(self):
         font = QtGui.QFont()
@@ -253,6 +221,9 @@ class setupEditor(object):
         self.brightnessSlider = QtWidgets.QSlider(parent=self.brightnessWidget)
         self.brightnessSlider.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.brightnessSlider.setObjectName("brightnessSlider")
+        self.brightnessSlider.setRange(0, 3000)
+        self.brightnessSlider.setSingleStep(2)
+        self.brightnessSlider.setValue(1000)
         self.gridLayout.addWidget(self.brightnessSlider, 1, 0, 1, 2)
         self.brightnessInputBox = QtWidgets.QDoubleSpinBox(parent=self.brightnessWidget)
         self.brightnessInputBox.setObjectName("brightnessInputBox")
@@ -282,6 +253,9 @@ class setupEditor(object):
         self.contrastSlider = QtWidgets.QSlider(parent=self.contrastWidget)
         self.contrastSlider.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.contrastSlider.setObjectName("contrastSlider")
+        self.contrastSlider.setRange(0, 3000)
+        self.contrastSlider.setSingleStep(2)
+        self.contrastSlider.setValue(1000)
         self.gridLayout_2.addWidget(self.contrastSlider, 1, 0, 1, 2)
         self.verticalLayout_6.addWidget(self.contrastWidget)
 
@@ -305,6 +279,9 @@ class setupEditor(object):
         self.vibranceSlider = QtWidgets.QSlider(parent=self.vibranceWidget)
         self.vibranceSlider.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.vibranceSlider.setObjectName("vibranceSlider")
+        self.vibranceSlider.setRange(0, 3000)
+        self.vibranceSlider.setSingleStep(2)
+        self.vibranceSlider.setValue(1000)
         self.gridLayout_3.addWidget(self.vibranceSlider, 1, 0, 1, 2)
         self.verticalLayout_6.addWidget(self.vibranceWidget)
 
@@ -379,9 +356,11 @@ class setupEditor(object):
         self.gridLayout_6.addWidget(self.cropButton, 0, 0, 1, 2)
         self.cropConfirmButton = QtWidgets.QPushButton(parent=self.cropWidget)
         self.cropConfirmButton.setObjectName("cropConfirmButton")
+        self.cropConfirmButton.hide()
         self.gridLayout_6.addWidget(self.cropConfirmButton, 1, 0, 1, 1)
         self.cropCancelButton = QtWidgets.QPushButton(parent=self.cropWidget)
         self.cropCancelButton.setObjectName("cropCancelButton")
+        self.cropCancelButton.hide()
         self.gridLayout_6.addWidget(self.cropCancelButton, 1, 1, 1, 1)
         self.verticalLayout_7.addWidget(self.cropWidget)
 
@@ -440,6 +419,9 @@ class setupEditor(object):
         self.sharpnessSlider = QtWidgets.QSlider(parent=self.sharpnessWidget)
         self.sharpnessSlider.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.sharpnessSlider.setObjectName("sharpnessSlider")
+        self.sharpnessSlider.setRange(0, 3000)
+        self.sharpnessSlider.setSingleStep(2)
+        self.sharpnessSlider.setValue(1000)
         self.gridLayout_8.addWidget(self.sharpnessSlider, 1, 0, 1, 2)
         self.verticalLayout_8.addWidget(self.sharpnessWidget)
 
@@ -531,8 +513,6 @@ class setupEditor(object):
 
     def showEffectsPage(self):
         self.stackedWidget.setCurrentIndex(2)
-
-
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
