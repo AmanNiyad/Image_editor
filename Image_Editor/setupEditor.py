@@ -116,6 +116,9 @@ class editor(object):
         self.scene_img = self.scene.addPixmap(self.pixmap)
         self.ui.gv.setScene(self.scene)
         self.ui.gv.ensureVisible(self.scene_img)
+        self.ui.gv.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.ui.gv.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.ui.gv.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         QtCore.QTimer.singleShot(0, self.handle_timeout)
 
         self.side_Menu_Pos = 1
@@ -210,23 +213,18 @@ class editor(object):
         self.ui.cropCancelButton.show()
         self.ui.cropButton.setEnabled(False)
 
-        self.viewingScale = self.image.width / self.ui.gv.viewport().rect().size().width()
-
         self.ui.cropConfirmButton.clicked.connect(lambda: self.cropConfirm())
         self.ui.cropCancelButton.clicked.connect(lambda: self.cropCancel())
 
     def cropConfirm(self):
+        self.viewingScale = self.image.width / self.ui.gv.viewport().rect().size().width()
         self.rb.update_dim()
-
-        print(self.rb.top, self.rb.left, self.rb.bottom, self.rb.right)
-        print(self.viewingScale)
 
         image_copy = self.image.crop((self.rb.left * self.viewingScale, self.rb.top * self.viewingScale,
                                       self.rb.right * self.viewingScale, self.rb.bottom * self.viewingScale))
 
         self.image = image_copy
         image_copy = image_copy.reduce(4)
-        image_copy.show()
         self.pil2pixmap(image_copy)
         self.rb.close()
         self.ui.cropConfirmButton.hide()
@@ -251,7 +249,7 @@ class editor(object):
         self.scene.removeItem(self.scene_img)
         self.scene_img = self.scene.addPixmap(self.pixmap)
         self.ui.gv.ensureVisible(self.scene_img)
-        self.ui.gv.fitInView(self.scene_img, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
+        QtCore.QTimer.singleShot(0, self.handle_timeout)
 
     def updateImg(self):
         brightness_enhancer = ImageEnhance.Brightness(self.image)
