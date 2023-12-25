@@ -202,38 +202,32 @@ class editor(object):
         self.ui.sharpnessInputBox.setValue(self.ui.sharpnessSlider.value()/1000)
 
     def cropping(self):
-        self.rb = resizableRubberBand(self, self.image)
+        self.ui.gv.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        self.rb = resizableRubberBand(self, self.image) 
+
         self.rb.setGeometry(self.ui.gv.geometry())
         self.ui.cropConfirmButton.show()
         self.ui.cropCancelButton.show()
         self.ui.cropButton.setEnabled(False)
+
+        self.viewingScale = self.image.width / self.ui.gv.viewport().rect().size().width()
 
         self.ui.cropConfirmButton.clicked.connect(lambda: self.cropConfirm())
         self.ui.cropCancelButton.clicked.connect(lambda: self.cropCancel())
 
     def cropConfirm(self):
         self.rb.update_dim()
-        print(self.rb.left)
-        print(self.rb.top)
-        print(self.rb.right)
-        print(self.rb.bottom)
-        print(self.image.width, "X" ,self.image.height)
-        print(self.scene_img.offset().x())
-        print(self.scene_img.offset().y())
-        print(self.zoom_factor)
 
-        #image_copy = self.image.crop((self.rb.left / self.zoom_factor, self.rb.top / self.zoom_factor,
-        #         self.rb.right / self.zoom_factor, self.rb.bottom / self.zoom_factor))
+        print(self.rb.top, self.rb.left, self.rb.bottom, self.rb.right)
+        print(self.viewingScale)
 
-        cropPixmap = self.pixmap.copy(self.rb.geometry())
-        self.scene.removeItem(self.scene_img)
-        self.scene_img = self.scene.addPixmap(cropPixmap)
-        self.ui.gv.ensureVisible(self.scene_img)
-        self.ui.gv.fitInView(self.scene_img, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
+        image_copy = self.image.crop((self.rb.left * self.viewingScale, self.rb.top * self.viewingScale,
+                                      self.rb.right * self.viewingScale, self.rb.bottom * self.viewingScale))
 
-        #self.image = image_copy
-        #image_copy = image_copy.reduce(4)
-        #self.pil2pixmap(image_copy)
+        self.image = image_copy
+        image_copy = image_copy.reduce(4)
+        image_copy.show()
+        self.pil2pixmap(image_copy)
         self.rb.close()
         self.ui.cropConfirmButton.hide()
         self.ui.cropCancelButton.hide()
