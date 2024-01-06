@@ -5,6 +5,8 @@ from PyQt6.QtCore import *
 from PIL import Image, ImageEnhance
 import pyqtgraph as pg
 import setupEditorUI_new
+import numpy as np
+from scipy.signal import convolve2d
 
 
 class resizableRubberBand(QWidget):
@@ -122,8 +124,10 @@ class editor(object):
         QtCore.QTimer.singleShot(0, self.handle_timeout)
 
         self.side_Menu_Pos = 1
-        self.ui.toggleMenuButton.clicked.connect(lambda: self.side_Menu_Def_0())
 
+        self.setupShadowsAndHighlights()
+
+        self.ui.toggleMenuButton.clicked.connect(lambda: self.side_Menu_Def_0())
         self.ui.brightnessSlider.valueChanged.connect(lambda: self.brightnessChanged())
         self.ui.brightnessSlider.sliderReleased.connect(lambda: self.updateImg())
         self.ui.contrastSlider.valueChanged.connect(lambda: self.contrastChanged())
@@ -295,3 +299,27 @@ class editor(object):
         self.plt3.setFillLevel(0)
         self.plt3.setPen(None)
         self.plt3.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Plus)
+
+    def setupShadowsAndHighlights(self):
+        image = self.image.convert('HSV')
+        self.lut = np.asarray(image, dtype = int)
+        self.transpose = self.lut.T[2]
+        threshold = np.max(self.transpose)
+        kernel = np.ones((25,25))
+        kernel[1,1] =0
+
+        nsum = convolve2d(self.transpose, kernel, mode ='same', boundary='fill',fillvalue=0)
+        nnei = convolve2d(np.ones(self.transpose.shape), kernel, mode ='same', boundary='fill',fillvalue=0)
+
+        self.mean_arr = nsum/nnei
+
+
+class Worker(QObject):
+    finished = pyqtSignal()
+    progress = pyqtSignal(int)
+    
+    main = editor()
+
+    def run(self):
+
+
