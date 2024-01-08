@@ -114,6 +114,10 @@ class editor(object):
         self.ui.plot.addItem(self.plt2)
         self.ui.plot.addItem(self.plt3)
 
+        self.threadpool = QThreadPool()
+        worker = Worker(self.calculateLUT, self.image)
+        self.threadpool.start(worker)
+
         # Display
         self.scene_img = self.scene.addPixmap(self.pixmap)
         self.ui.gv.setScene(self.scene)
@@ -124,8 +128,6 @@ class editor(object):
         QtCore.QTimer.singleShot(0, self.handle_timeout)
 
         self.side_Menu_Pos = 1
-
-        self.setupShadowsAndHighlights()
 
         self.ui.toggleMenuButton.clicked.connect(lambda: self.side_Menu_Def_0())
         self.ui.brightnessSlider.valueChanged.connect(lambda: self.brightnessChanged())
@@ -181,6 +183,7 @@ class editor(object):
         return (self.zoom_factor)
 
     def brightnessChanged(self):
+        print("CLICKED BRIGHTNESS")
         self.Brightness_value = self.ui.brightnessSlider.value()/1000
         brightness_enhancer = ImageEnhance.Brightness(self.image)
         image_copy = brightness_enhancer.enhance(self.Brightness_value)
@@ -300,13 +303,15 @@ class editor(object):
         self.plt3.setPen(None)
         self.plt3.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Plus)
 
-    def setupShadowsAndHighlights(self):
-        image = self.image.convert('HSV')
+    def calculateLUT(self, image):
+        image = image.convert('HSV')
+
         self.lut = np.asarray(image, dtype = int)
         self.transpose = self.lut.T[2]
-        threshold = np.max(self.transpose)
+        self.threshold = np.max(self.transpose)
+
         kernel = np.ones((25,25))
-        kernel[1,1] =0
+        kernel[1,1] = 0
 
         nsum = convolve2d(self.transpose, kernel, mode ='same', boundary='fill',fillvalue=0)
         nnei = convolve2d(np.ones(self.transpose.shape), kernel, mode ='same', boundary='fill',fillvalue=0)
@@ -314,12 +319,13 @@ class editor(object):
         self.mean_arr = nsum/nnei
 
 
-class Worker(QObject):
-    finished = pyqtSignal()
-    progress = pyqtSignal(int)
-    
-    main = editor()
+class Worker(QRunnable):
+    def __init__(self, fn, *args, **kwargs):
+        super(Worker, self).__init__()
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
 
+    @pyqtSlot()
     def run(self):
-
-
+        self.fn(*self.args, **self.kwargs)
