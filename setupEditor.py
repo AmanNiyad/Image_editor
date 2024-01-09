@@ -3,13 +3,16 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 from PIL import Image, ImageEnhance
+import time
 import pyqtgraph as pg
 import setupEditorUI_new
 import numpy as np
 from numpy.fft import fft2, ifft2
 import subprocess
-import cusignal
-import cupy as cp
+try:
+    import cusignal, cupy as cp
+except ImportError:
+    print("Operating in CPU mode")
 
 class resizableRubberBand(QWidget):
     def __init__(self, MainWindow, im):
@@ -116,6 +119,7 @@ class editor(object):
         self.ui.plot.addItem(self.plt2)
         self.ui.plot.addItem(self.plt3)
 
+        self.ui.shadowsSlider.setEnabled(False)
         self.threadpool = QThreadPool()
         worker = Worker(self.calculateLUT, self.image)
         self.threadpool.start(worker)
@@ -140,6 +144,8 @@ class editor(object):
         self.ui.vibranceSlider.sliderReleased.connect(lambda: self.updateImg())
         self.ui.sharpnessSlider.valueChanged.connect(lambda: self.sharpnessChanged())
         self.ui.sharpnessSlider.sliderReleased.connect(lambda: self.updateImg())
+        self.ui.shadowsSlider.valueChanged.connect(lambda: self.shadowsChanged())
+        self.ui.shadowsSlider.sliderReleased.connect(lambda: self.updateImg())
         self.ui.cropButton.clicked.connect(lambda: self.cropping())
 
 
@@ -213,6 +219,24 @@ class editor(object):
         self.pil2pixmap(image_copy)
         self.ui.sharpnessInputBox.setValue(self.ui.sharpnessSlider.value()/1000)
 
+    def shadowsChanged(self):
+        self.Shadow_value = self.ui.shadowsSlider.value()/15
+        self.transpose[self.mean_arr < self.threshold/2] -= int(self.Shadow_value)
+        self.transpose[np.logical_and(self.threshold/2 < self.mean_arr, self.mean_arr < (self.threshold/2)+1)] -= int(self.Shadow_value/7)
+        self.transpose[np.logical_and(self.threshold/2 < self.mean_arr, self.mean_arr < (self.threshold/2)+3)] -= int(self.Shadow_value/7)
+        self.transpose[np.logical_and(self.threshold/2 < self.mean_arr, self.mean_arr < (self.threshold/2)+5)] -= int(self.Shadow_value/8)
+        self.transpose[np.logical_and(self.threshold/2 < self.mean_arr, self.mean_arr < (self.threshold/2)+7)] -= int(self.Shadow_value/9)
+        self.transpose[np.logical_and(self.threshold/2 < self.mean_arr, self.mean_arr < (self.threshold/2)+9)] -= int(self.Shadow_value/9)
+        self.lut[..., 2] = self.transpose
+
+        image_copy = Image.fromarray(self.lut.astype('uint8'), mode = 'HSV')
+        self.threadpool = QThreadPool()
+        worker = Worker(self.calculateLUT, self.image)
+        self.threadpool.start(worker)
+        image_copy = image_copy.convert('RGB')
+        self.pil2pixmap(image_copy)
+        self.ui.shadowsInputBox.setValue(self.ui.shadowsSlider.value()/15)
+
     def cropping(self):
         self.ui.gv.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         self.rb = resizableRubberBand(self, self.image) 
@@ -269,6 +293,23 @@ class editor(object):
         image_copy = vibrance_enhancer.enhance(self.Vibrance_value)
         sharpness_enhancer = ImageEnhance.Sharpness(image_copy)
         image_copy = sharpness_enhancer.enhance(self.Sharpness_value)
+        self.threadpool = QThreadPool()
+        worker = Worker(self.calculateLUT, image_copy)
+        self.threadpool.start(worker)
+        time.sleep(0.5)
+        self.Shadow_value = self.ui.shadowsSlider.value()/15
+        self.transpose[self.mean_arr < self.threshold/2] -= int(self.Shadow_value)
+        self.transpose[np.logical_and(self.threshold/2 < self.mean_arr, self.mean_arr < (self.threshold/2)+1)] -= int(self.Shadow_value/7)
+        self.transpose[np.logical_and(self.threshold/2 < self.mean_arr, self.mean_arr < (self.threshold/2)+3)] -= int(self.Shadow_value/7)
+        self.transpose[np.logical_and(self.threshold/2 < self.mean_arr, self.mean_arr < (self.threshold/2)+5)] -= int(self.Shadow_value/8)
+        self.transpose[np.logical_and(self.threshold/2 < self.mean_arr, self.mean_arr < (self.threshold/2)+7)] -= int(self.Shadow_value/9)
+        self.transpose[np.logical_and(self.threshold/2 < self.mean_arr, self.mean_arr < (self.threshold/2)+9)] -= int(self.Shadow_value/9)
+        self.lut[..., 2] = self.transpose
+
+        image_copy = Image.fromarray(self.lut.astype('uint8'), mode = 'HSV')
+
+        image_copy = image_copy.convert('RGB')
+
         self.pil2pixmap(image_copy)
         self.updateHistogram(image_copy)
 
@@ -305,12 +346,15 @@ class editor(object):
         self.plt3.setPen(None)
         self.plt3.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Plus)
 
-    def mean_values(self):
+    def np_fftconvolve(self, A, B):
+        return np.real(ifft2(fft2(A)*fft2(B, s=A.shape)))
+
+    def mean_values_cpu(self):
         kernel = np.ones((25,25))
         kernel[1,1] =0
 
-        nsum = np_fftconvolve(self.transpose, kernel)
-        nnei = np_fftconvolve(np.ones(self.transpose.shape), kernel)
+        nsum = self.np_fftconvolve(self.transpose, kernel)
+        nnei = self.np_fftconvolve(np.ones(self.transpose.shape), kernel)
 
         self.mean_arr = nsum/nnei
 
@@ -327,15 +371,16 @@ class editor(object):
         image = image.convert('HSV')
 
         self.lut = np.asarray(image, dtype = int)
-        self.transpose = self.lut.T[2]
+        self.transpose = self.lut[..., 2]
         self.threshold = np.max(self.transpose)
 
         try:
             subprocess.check_output('nvidia-smi')
             self.mean_values_gpu()
         except Exception:
-            self.mean_values()
+            self.mean_values_cpu()
 
+        self.ui.shadowsSlider.setEnabled(True)
 
 class Worker(QRunnable):
     def __init__(self, fn, *args, **kwargs):
