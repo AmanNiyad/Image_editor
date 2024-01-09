@@ -6,8 +6,10 @@ from PIL import Image, ImageEnhance
 import pyqtgraph as pg
 import setupEditorUI_new
 import numpy as np
-from scipy.signal import convolve2d
-
+from numpy.fft import fft2, ifft2
+import subprocess
+import cusignal
+import cupy as cp
 
 class resizableRubberBand(QWidget):
     def __init__(self, MainWindow, im):
@@ -140,6 +142,7 @@ class editor(object):
         self.ui.sharpnessSlider.sliderReleased.connect(lambda: self.updateImg())
         self.ui.cropButton.clicked.connect(lambda: self.cropping())
 
+
     def side_Menu_Def_0(self):
         if self.side_Menu_Pos == 0:
             self.animation1 = QtCore.QPropertyAnimation(self.ui.slidingMenuFrame, b"maximumWidth")
@@ -183,7 +186,6 @@ class editor(object):
         return (self.zoom_factor)
 
     def brightnessChanged(self):
-        print("CLICKED BRIGHTNESS")
         self.Brightness_value = self.ui.brightnessSlider.value()/1000
         brightness_enhancer = ImageEnhance.Brightness(self.image)
         image_copy = brightness_enhancer.enhance(self.Brightness_value)
@@ -303,6 +305,24 @@ class editor(object):
         self.plt3.setPen(None)
         self.plt3.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Plus)
 
+    def mean_values(self):
+        kernel = np.ones((25,25))
+        kernel[1,1] =0
+
+        nsum = np_fftconvolve(self.transpose, kernel)
+        nnei = np_fftconvolve(np.ones(self.transpose.shape), kernel)
+
+        self.mean_arr = nsum/nnei
+
+    def mean_values_gpu(self):
+        kernel = np.ones((35,35))
+        kernel[1,1] =0
+
+        nsum = cp.asnumpy(cusignal.convolve2d(self.transpose, kernel, mode='same'))
+        nnei = cp.asnumpy(cusignal.convolve2d(np.ones(self.transpose.shape), kernel, mode='same'))
+
+        self.mean_arr = nsum/nnei
+
     def calculateLUT(self, image):
         image = image.convert('HSV')
 
@@ -310,13 +330,11 @@ class editor(object):
         self.transpose = self.lut.T[2]
         self.threshold = np.max(self.transpose)
 
-        kernel = np.ones((25,25))
-        kernel[1,1] = 0
-
-        nsum = convolve2d(self.transpose, kernel, mode ='same', boundary='fill',fillvalue=0)
-        nnei = convolve2d(np.ones(self.transpose.shape), kernel, mode ='same', boundary='fill',fillvalue=0)
-
-        self.mean_arr = nsum/nnei
+        try:
+            subprocess.check_output('nvidia-smi')
+            self.mean_values_gpu()
+        except Exception:
+            self.mean_values()
 
 
 class Worker(QRunnable):
