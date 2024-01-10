@@ -284,6 +284,7 @@ class editor(object):
         self.ui.gv.ensureVisible(self.scene_img)
         QtCore.QTimer.singleShot(0, self.handle_timeout)
 
+    #Display image in seperate thread!
     def updateImg(self):
         brightness_enhancer = ImageEnhance.Brightness(self.image)
         image_copy = brightness_enhancer.enhance(self.Brightness_value)
