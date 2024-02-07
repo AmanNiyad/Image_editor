@@ -6,7 +6,10 @@ import setupMenubar
 class setupViewer():
     def setupUi(self, MainWindow, MainWidget):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1920, 1080)
+        MainWindow.setStyleSheet("""
+                    background-color: #333333;
+                    color: #FFFFFF;
+                    """)
 
         self.centralwidget = QtWidgets.QWidget(MainWidget)
         self.centralwidget.setObjectName("centralwidget")

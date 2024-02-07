@@ -4,7 +4,6 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QGraphicsView, QGraphicsScene, QMessageBox
 import glob
 import setupEditor
-import setupMenubar
 import setupViewerUi
 
 
@@ -86,6 +85,8 @@ class Ui_MainWindow(object):
         #try:
             for i in (self.MainWidget.findChildren(QtWidgets.QWidget)):
                 i.deleteLater()
+
+            self.ui.menu.menubar.deleteLater()
 
             editorWindow = setupEditor.editor()
             editorWindow.setupUi(MainWindow, self.currentImage)
